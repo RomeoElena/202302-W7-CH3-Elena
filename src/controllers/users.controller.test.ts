@@ -19,7 +19,7 @@ describe('Given register method from UsersController', () => {
   } as unknown as Response;
   const next = jest.fn();
 
-  describe('When there are not password in the body', () => {
+  describe('When there are not password in the body register', () => {
     const req = {
       body: {
         email: 'test',
