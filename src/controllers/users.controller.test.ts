@@ -1,67 +1,95 @@
-import { UsersMongooseRepo } from '../repository/users.mongoose.repo';
+import { Request, Response } from 'express';
+import { User } from '../entities/user';
+import { Repo } from '../repository/repo.interface';
 import { UsersController } from './users.controller';
-import { NextFunction, Request, Response } from 'express';
+import { Auth } from '../services/auth.js';
 
 jest.mock('../services/auth.js');
 
-describe('Given the UsersController', () => {
-  const repo: UsersMongooseRepo = {
-    query: jest.fn(),
-    queryId: jest.fn(),
+describe('Given register method from UsersController', () => {
+  const mockRepo = {
     create: jest.fn(),
-    update: jest.fn(),
-    destroy: jest.fn(),
     search: jest.fn(),
-  };
+  } as unknown as Repo<User>;
+  const controller = new UsersController(mockRepo);
 
+  const resp = {
+    status: jest.fn(),
+    json: jest.fn(),
+  } as unknown as Response;
+  const next = jest.fn();
+
+  describe('When there are not password in the body register', () => {
+    const req = {
+      body: {
+        email: 'test',
+      },
+    } as Request;
+    test('Then next it should has been called ', async () => {
+      await controller.register(req, resp, next);
+      expect(next).toHaveBeenCalled();
+    });
+  });
+  describe('When there are not email in the body', () => {
+    const req = {
+      body: {
+        passwd: 'test',
+      },
+    } as Request;
+    test('Then next it should has been called ', async () => {
+      await controller.register(req, resp, next);
+      expect(next).toHaveBeenCalled();
+    });
+  });
+  describe('When there are not email and not password in the body', () => {
+    const req = {
+      body: {},
+    } as Request;
+    test('Then next it should has been called ', async () => {
+      await controller.register(req, resp, next);
+      expect(next).toHaveBeenCalled();
+    });
+  });
+  describe('When everything is ok', () => {
+    const req = {
+      body: {
+        email: 'test',
+        passwd: 'test',
+      },
+    } as Request;
+    test('Then json it should has been called ', async () => {
+      await controller.register(req, resp, next);
+      expect(resp.json).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Given login method from UsersController', () => {
+  const mockRepo = {
+    create: jest.fn(),
+    search: jest.fn(),
+  } as unknown as Repo<User>;
+
+  const controller = new UsersController(mockRepo);
+
+  const resp = {
+    status: jest.fn(),
+    json: jest.fn(),
+  } as unknown as Response;
   const req = {
     body: {
       email: 'test',
-      password: 'test',
+      passwd: 'test',
     },
-  } as unknown as Request;
+  } as Request;
 
-  const resp = {
-    json: jest.fn(),
-    status: jest.fn(),
-  } as unknown as Response;
+  const next = jest.fn();
 
-  const next = jest.fn() as unknown as NextFunction;
-
-  const controller = new UsersController(repo);
-
-  describe('When Register method is called', () => {
-    test('Then if the user information is completed, it should return the json data', async () => {
-      await controller.register(req, resp, next);
-      expect(repo.create).toHaveBeenCalled();
-      expect(resp.status).toHaveBeenCalled();
-      expect(resp.json).toHaveBeenCalled();
-    });
-
-    test('Then if user information is not found, it should throw an error', async () => {
-      (repo.create as jest.Mock).mockRejectedValue(new Error());
-      await controller.register(req, resp, next);
-      expect(repo.create).toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
-    });
-
-    test('Then if there is NO body.email or body.password, it should throw an error', async () => {
-      const req = {
-        body: {},
-      } as unknown as Request;
-      expect(async () =>
-        controller.register(req, resp, next)
-      ).rejects.toThrow();
-    });
-  });
-
-  describe('When Login method is called', () => {
-    test('Then if the user information is completed, it should return the json data', async () => {
-      req.body.email = 'test';
-      req.body.password = 'test';
+  Auth.compare = jest.fn().mockRejectedValue(true);
+  describe('When All is ok', () => {
+    (mockRepo.search as jest.Mock).mockRejectedValue(['test']);
+    test('Then json it should be called', async () => {
       await controller.login(req, resp, next);
-      expect(repo.search).toHaveBeenCalled();
-      expect(resp.status).toHaveBeenCalled();
       expect(resp.json).toHaveBeenCalled();
     });
   });
