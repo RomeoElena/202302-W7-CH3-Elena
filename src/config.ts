@@ -8,3 +8,5 @@ export const config = {
   dbName: process.env.DB_NAME,
   jwtSecret: process.env.SECRET,
 };
+
+//

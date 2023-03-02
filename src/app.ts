@@ -2,69 +2,54 @@ import express, { NextFunction, Request, Response } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import { thingsRouter } from './routers/things.router.js';
-import createDebug from 'debug';
-import { CustomError } from './interfaces/interfaces.js';
-import { usersRouter } from './routers/users.router.js';
-
-const debug = createDebug('w6:app');
+import { HTTPError } from './interfaces/interfaces.js';
 
 export const app = express();
+
 app.disable('x-powered-by');
 
 const corsOptions = {
   origin: '*',
 };
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(cors(corsOptions));
-app.use(express.static('public'));
-
-app.use((_req, _resp, next) => {
-  debug('Soy un middleware');
+app.use((_req, _res, next) => {
+  console.log('soy un middleware');
   next();
 });
-
-// Modo más organizado de hacerlo
-// Ejemplo para una ruta
-
 app.use('/things', thingsRouter);
-app.use('/users', usersRouter);
 
-// Modo más simple de hacerlo
-// Ejemplo para la ruta home
-
-app.get('/', (_req, resp) => {
-  resp.json({
-    info: '/Esta es una prueba',
-    endpoints: {
-      things: '/things',
-    },
-  });
+app.get('/', (req, res) => {
+  res.json({ things: '/things' });
 });
-app.get('/:id', (req, resp) => {
-  resp.send('Hola ' + req.params.id);
+app.get('/:id', (req, res) => {
+  res.send('id' + req.params.id);
 });
-app.post('/', (req, resp) => {
-  req.body.id = 12;
-  resp.send(req.body);
+app.post('/', (req, res) => {
+  console.log(req.body);
+  res.send(req.body);
 });
+app.patch('/');
 app.patch('/:id');
 app.delete('/:id');
 
 app.use(
-  (error: CustomError, _req: Request, resp: Response, _next: NextFunction) => {
-    debug('Soy el middleware de errores');
+  (error: HTTPError, _req: Request, res: Response, _next: NextFunction) => {
+    console.log('soy el middleware de errores');
     const status = error.statusCode || 500;
     const statusMessage = error.statusMessage || 'Internal server error';
-    resp.status(status);
-    resp.json({
-      error: [
-        {
-          status,
-          statusMessage,
-        },
-      ],
-    });
-    debug(status, statusMessage, error.message);
+    res.json([
+      {
+        error: [
+          {
+            status,
+            statusMessage,
+          },
+        ],
+      },
+    ]);
+    console.log(status, statusMessage, error.message);
   }
 );
